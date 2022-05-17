@@ -30,6 +30,7 @@ public class UserController {
         this.userService = userService;
         this.jwtService = jwtService;
     }
+
     /* 로그인 */
     @ResponseBody
     @PostMapping("/login")
@@ -42,7 +43,7 @@ public class UserController {
             if (postLoginReq.getPassword() == null) {
                 return new BaseResponse<>(POST_USERS_EMPTY_PASSWORD);
             }
-            //정규식 검증
+            //이메일 정규식 검증
             if(!isRegexEmail(postLoginReq.getEmail())){
                 return new BaseResponse<>(POST_USERS_INVALID_EMAIL);
             }
