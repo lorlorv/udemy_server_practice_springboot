@@ -31,7 +31,7 @@ public class JwtService {
                 .claim("userIdx",userIdx)
                 .setIssuedAt(now)
                 .setExpiration(new Date(System.currentTimeMillis()+1*(1000*60*60*24*365)))
-                .signWith(SignatureAlgorithm.HS256, Secret.JWT_SECRET_KEY)
+                .signWith(SignatureAlgorithm.HS256, Secret.JWT_SECRET_KEY) //키 노출되면 안됨!!! 인코딩 해주는 키
                 .compact();
     }
 

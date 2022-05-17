@@ -2,6 +2,7 @@ package com.example.demo.src.user;
 
 import com.example.demo.config.BaseException;
 import com.example.demo.config.BaseResponse;
+import com.example.demo.src.post.model.PostPostsReq;
 import com.example.demo.src.user.model.*;
 import com.example.demo.utils.JwtService;
 import org.slf4j.Logger;
@@ -9,8 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import static com.example.demo.config.BaseResponseStatus.POST_USERS_EMPTY_EMAIL;
-import static com.example.demo.config.BaseResponseStatus.POST_USERS_INVALID_EMAIL;
+import static com.example.demo.config.BaseResponseStatus.*;
 import static com.example.demo.utils.ValidationRegex.isRegexEmail;
 
 @RestController
@@ -25,13 +25,32 @@ public class UserController {
     @Autowired
     private final JwtService jwtService;
 
-
-
-
     public UserController(UserProvider userProvider, UserService userService, JwtService jwtService){
         this.userProvider = userProvider;
         this.userService = userService;
         this.jwtService = jwtService;
+    }
+    /* 로그인 */
+    @ResponseBody
+    @PostMapping("/login")
+    public BaseResponse<PostLoginRes> logIn(@RequestBody PostLoginReq postLoginReq) {
+        try {
+            //이메일 검증
+            if (postLoginReq.getEmail() == null) {
+                return new BaseResponse<>(POST_USERS_EMPTY_EMAIL);
+            }
+            if (postLoginReq.getPassword() == null) {
+                return new BaseResponse<>(POST_USERS_EMPTY_PASSWORD);
+            }
+            //정규식 검증
+            if(!isRegexEmail(postLoginReq.getEmail())){
+                return new BaseResponse<>(POST_USERS_INVALID_EMAIL);
+            }
+            PostLoginRes postLoginRes = userService.logIn(postLoginReq);
+            return new BaseResponse<>(postLoginRes);
+        } catch(BaseException exception){
+            return new BaseResponse<>((exception.getStatus()));
+        }
     }
 
 
@@ -45,30 +64,23 @@ public class UserController {
      */
     //Query String
     @ResponseBody
-    @GetMapping("") // (GET) 127.0.0.1:9000/users
-    public BaseResponse<GetUserRes> getUsers(@RequestParam(required = true) String Email) {
+    @GetMapping("/{userIdx}") // (GET) 127.0.0.1:9000/users
+    public BaseResponse<GetUserFeedRes> getUserFeed(@PathVariable("userIdx")int userIdx) {
         try{
-            // TODO: email 관련한 짧은 validation 예시입니다. 그 외 더 부가적으로 추가해주세요!
-            if(Email.length()==0){
-                return new BaseResponse<>(POST_USERS_EMPTY_EMAIL);
-            }
-            // 이메일 정규표현
-            if(!isRegexEmail(Email)){
-                return new BaseResponse<>(POST_USERS_INVALID_EMAIL);
-            }
-            GetUserRes getUsersRes = userProvider.getUsersByEmail(Email);
-            return new BaseResponse<>(getUsersRes);
+
+            GetUserFeedRes getUserFeedRes = userProvider.retrieveUserFeed(userIdx, userIdx); //비교는 provider가
+            return new BaseResponse<>(getUserFeedRes);
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
         }
     }
 
     @ResponseBody
-    @GetMapping("/{userIdx}") // (GET) 127.0.0.1:9000/users/:userIdx
-    public BaseResponse<GetUserRes> getUserByIdx(@PathVariable("userIdx")int userIdx) {
+    @GetMapping("/{userIdx}/X") // (GET) 127.0.0.1:9000/users/:userIdx
+    public BaseResponse<GetUserInfoRes> getUserByIdx(@PathVariable("userIdx")int userIdx) {
         try{
 
-            GetUserRes getUsersRes = userProvider.getUsersByIdx(userIdx);
+            GetUserInfoRes getUsersRes = userProvider.getUsersByIdx(userIdx);
             return new BaseResponse<>(getUsersRes);
         } catch(BaseException exception){
             return new BaseResponse<>((exception.getStatus()));
@@ -127,5 +139,23 @@ public class UserController {
             return new BaseResponse<>((exception.getStatus()));
         }
     }
+
+    /**
+     * 유저삭제 API
+     * [DELETE] /users/:userIdx
+     * @return BaseResponse<String>
+     */
+    @ResponseBody
+    @DeleteMapping("/{userIdx}") // (DELETE) 127.0.0.1:9000/users/:userIdx
+    public BaseResponse<String> delteUserByIdx(@PathVariable("userIdx") int userIdx){
+        try {
+            userService.deleteUserIdx(userIdx);
+        } catch (BaseException exception) {
+            return new BaseResponse<>((exception.getStatus()));
+        }
+        return new BaseResponse<>("삭제되었습니다.");
+    }
+
+
 
 }
